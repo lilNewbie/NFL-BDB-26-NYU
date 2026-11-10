@@ -17,6 +17,20 @@ GAP_THRESHOLD = 45.0        # degrees: defender has "turned" once below this
 PAIR_FRAMES = 10            # frames after the snap used to pair a defender
 MAX_PAIR_DIST = 5.0         # yards: paired defender must still be this close at the break
 
+# Only defensive backs and linebackers can be paired. PFF tags a dropping edge rusher
+# as "Coverage" too, but a lineman in coverage is spying or sinking into a short zone,
+# not covering a receiver man to man.
+DB_POSITIONS = {"CB", "FS", "SS", "S", "DB"}
+LB_POSITIONS = {"ILB", "OLB", "MLB", "LB"}
+
+
+def defender_group(position) -> str | None:
+    if position in DB_POSITIONS:
+        return "DB"
+    if position in LB_POSITIONS:
+        return "LB"
+    return None
+
 
 def detect_break(dir_s, speed, lookback=BREAK_LOOKBACK, min_change=BREAK_MIN_CHANGE,
                  min_speed=BREAK_MIN_SPEED):
@@ -124,7 +138,11 @@ def compute_play(play: pd.DataFrame, log: dict | None = None, keep_series: bool 
     meta = first.set_index("nflId")
 
     routes = first[(first["pff_role"] == "Pass Route") & first["officialPosition"].isin(SKILL_POSITIONS)]
-    coverage_ids = [int(i) for i in first.loc[first["pff_role"] == "Coverage", "nflId"]]
+    cov = first[first["pff_role"] == "Coverage"]
+    pairable = cov["officialPosition"].map(defender_group).notna()
+    if (~pairable).any():
+        log["coverage_players_not_pairable"] = log.get("coverage_players_not_pairable", 0) + int((~pairable).sum())
+    coverage_ids = [int(i) for i in cov.loc[pairable, "nflId"]]
     if routes.empty or not coverage_ids:
         log["plays_no_routes_or_coverage"] = log.get("plays_no_routes_or_coverage", 0) + 1
         return []
@@ -169,6 +187,7 @@ def compute_play(play: pd.DataFrame, log: dict | None = None, keep_series: bool 
             "position": meta.loc[rec_id, "officialPosition"], "team": meta.loc[rec_id, "team"],
             "def_id": def_id, "def_name": meta.loc[def_id, "displayName"],
             "def_position": meta.loc[def_id, "officialPosition"],
+            "def_group": defender_group(meta.loc[def_id, "officialPosition"]),
             "coverage": info["pff_passCoverage"], "coverage_type": info["pff_passCoverageType"],
             "passResult": info["passResult"], "is_target": rec_id == target_id,
             "snap_frame": snap, "throw_frame": throw, "break_frame": int(frames[b_idx]),
@@ -187,14 +206,19 @@ def compute_play(play: pd.DataFrame, log: dict | None = None, keep_series: bool 
 
 
 def add_over_expected(routes: pd.DataFrame) -> pd.DataFrame:
-    """Subtract the (coverage type, position, bucket) average from Turn Lag and Mean Gap.
+    """Subtract the (coverage type, receiver position, defender group, bucket) average
+    from Turn Lag and Mean Gap.
 
-    Position is part of the baseline because a back releasing from the
+    Receiver position is in the baseline because a back releasing from the
     backfield is usually paired with a linebacker who keeps facing the
     quarterback; with a bucket-only baseline RBs filled the leaderboard.
+    Defender group (DB vs LB) is in the baseline because even on man-coverage
+    plays some linebackers drop into zones and face the quarterback, so an LB
+    pairing looks "turned" without the receiver doing anything (LB-paired routes
+    averaged +16 degrees over expected without it, CB-paired -2).
     """
     routes = routes.copy()
-    grp = routes.groupby(["coverage_type", "position", "bucket"], dropna=False)
+    grp = routes.groupby(["coverage_type", "position", "def_group", "bucket"], dropna=False)
     routes["turn_lag_oe"] = routes["turn_lag"] - grp["turn_lag"].transform("mean")
     routes["mean_gap_oe"] = routes["mean_gap"] - grp["mean_gap"].transform("mean")
     return routes

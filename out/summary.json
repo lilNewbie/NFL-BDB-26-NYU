@@ -3,14 +3,14 @@
   "headline_label": "Mean Gap Over Expected",
   "headline_reason": "49% of man-coverage routes end with the defender still turned when the ball is thrown (censored), above the 30% censoring threshold we set in advance, so time-to-turn is capped on most reps. The headline is therefore Mean Gap Over Expected, which has no cap.",
   "censored_share_man": 0.491,
-  "censored_share_all": 0.576,
-  "routes_scored": 6761,
-  "routes_man": 2780,
-  "qualified_players": 62,
+  "censored_share_all": 0.574,
+  "routes_scored": 6707,
+  "routes_man": 2774,
+  "qualified_players": 63,
   "min_routes": 15,
-  "r_player_headline_vs_sep_throw": 0.164,
-  "r_route_headline_vs_sep_throw": 0.186,
-  "validation_r_headline_vs_defender_ahead": 0.054,
+  "r_player_headline_vs_sep_throw": 0.137,
+  "r_route_headline_vs_sep_throw": 0.154,
+  "validation_r_headline_vs_defender_ahead": 0.079,
   "smoke_test_top25_hits": [
     "Cooper Kupp",
     "Justin Jefferson"
@@ -23,10 +23,10 @@
       "n": 4
     },
     "RB / diagonal downfield": {
-      "turn_lag": 0.716,
-      "mean_gap": 98.329,
-      "censored": 0.711,
-      "n": 38
+      "turn_lag": 0.681,
+      "mean_gap": 96.767,
+      "censored": 0.703,
+      "n": 37
     },
     "RB / sideways": {
       "turn_lag": 0.676,
@@ -35,99 +35,111 @@
       "n": 17
     },
     "RB / slight": {
-      "turn_lag": 0.614,
-      "mean_gap": 93.334,
-      "censored": 0.655,
-      "n": 232
+      "turn_lag": 0.607,
+      "mean_gap": 92.75,
+      "censored": 0.657,
+      "n": 230
     },
     "TE / back toward line": {
-      "turn_lag": 0.233,
-      "mean_gap": 53.205,
-      "censored": 0.278,
-      "n": 18
+      "turn_lag": 0.265,
+      "mean_gap": 54.014,
+      "censored": 0.353,
+      "n": 17
     },
     "TE / diagonal downfield": {
-      "turn_lag": 0.998,
-      "mean_gap": 99.443,
-      "censored": 0.594,
-      "n": 96
+      "turn_lag": 1.005,
+      "mean_gap": 99.977,
+      "censored": 0.6,
+      "n": 95
     },
     "TE / sideways": {
-      "turn_lag": 0.696,
-      "mean_gap": 73.818,
-      "censored": 0.562,
-      "n": 73
+      "turn_lag": 0.683,
+      "mean_gap": 73.782,
+      "censored": 0.556,
+      "n": 72
     },
     "TE / slight": {
-      "turn_lag": 0.94,
-      "mean_gap": 86.798,
-      "censored": 0.527,
-      "n": 493
+      "turn_lag": 0.935,
+      "mean_gap": 86.633,
+      "censored": 0.525,
+      "n": 495
     },
     "WR / back toward line": {
-      "turn_lag": 0.183,
-      "mean_gap": 41.155,
-      "censored": 0.155,
-      "n": 58
+      "turn_lag": 0.186,
+      "mean_gap": 41.404,
+      "censored": 0.158,
+      "n": 57
     },
     "WR / diagonal downfield": {
-      "turn_lag": 0.95,
-      "mean_gap": 89.081,
-      "censored": 0.514,
-      "n": 173
+      "turn_lag": 0.955,
+      "mean_gap": 89.528,
+      "censored": 0.517,
+      "n": 172
     },
     "WR / sideways": {
-      "turn_lag": 0.489,
-      "mean_gap": 71.756,
-      "censored": 0.506,
-      "n": 168
+      "turn_lag": 0.488,
+      "mean_gap": 71.461,
+      "censored": 0.509,
+      "n": 169
     },
     "WR / slight": {
-      "turn_lag": 0.857,
-      "mean_gap": 80.002,
-      "censored": 0.447,
-      "n": 1410
+      "turn_lag": 0.855,
+      "mean_gap": 79.963,
+      "censored": 0.446,
+      "n": 1409
     }
   },
   "run_log": {
     "plays_total": 8557,
     "plays_dropped_no_snap_or_throw": 974,
     "routes_total": 34654,
+    "routes_scored": 6707,
     "routes_no_break": 21061,
-    "routes_scored": 6761,
-    "routes_defender_not_close": 6832,
+    "routes_defender_not_close": 6886,
+    "coverage_players_not_pairable": 502,
     "games": 122,
     "errors": []
   },
   "top10": [
     {
+      "name": "Ricky Seals-Jones",
+      "position": "TE",
+      "team": "WAS",
+      "routes": 15,
+      "headline": 18.41,
+      "turn_lag": 0.87,
+      "censored": 0.6,
+      "sep_throw": 3.64,
+      "targets": 6
+    },
+    {
       "name": "Cooper Kupp",
       "position": "WR",
       "team": "LA",
       "routes": 17,
-      "headline": 16.27,
+      "headline": 14.65,
       "turn_lag": 0.74,
       "censored": 0.65,
       "sep_throw": 3.85,
       "targets": 10
     },
     {
-      "name": "Cameron Brate",
-      "position": "TE",
-      "team": "TB",
-      "routes": 18,
-      "headline": 13.91,
-      "turn_lag": 0.88,
-      "censored": 0.72,
-      "sep_throw": 3.05,
-      "targets": 4
+      "name": "Courtland Sutton",
+      "position": "WR",
+      "team": "DEN",
+      "routes": 22,
+      "headline": 11.74,
+      "turn_lag": 0.65,
+      "censored": 0.64,
+      "sep_throw": 1.79,
+      "targets": 8
     },
     {
       "name": "Tajae Sharpe",
       "position": "WR",
       "team": "ATL",
       "routes": 15,
-      "headline": 12.75,
+      "headline": 11.53,
       "turn_lag": 1.05,
       "censored": 0.67,
       "sep_throw": 1.95,
@@ -138,62 +150,18 @@
       "position": "TE",
       "team": "NE",
       "routes": 17,
-      "headline": 11.13,
+      "headline": 10.85,
       "turn_lag": 0.86,
       "censored": 0.65,
       "sep_throw": 2.57,
       "targets": 5
     },
     {
-      "name": "Courtland Sutton",
-      "position": "WR",
-      "team": "DEN",
-      "routes": 22,
-      "headline": 10.65,
-      "turn_lag": 0.65,
-      "censored": 0.64,
-      "sep_throw": 1.79,
-      "targets": 8
-    },
-    {
-      "name": "Chris Godwin",
-      "position": "WR",
-      "team": "TB",
-      "routes": 38,
-      "headline": 10.28,
-      "turn_lag": 0.92,
-      "censored": 0.45,
-      "sep_throw": 3.58,
-      "targets": 8
-    },
-    {
-      "name": "Noah Fant",
-      "position": "TE",
-      "team": "DEN",
-      "routes": 20,
-      "headline": 10.03,
-      "turn_lag": 0.84,
-      "censored": 0.55,
-      "sep_throw": 3.56,
-      "targets": 2
-    },
-    {
-      "name": "Bryan Edwards",
-      "position": "WR",
-      "team": "LV",
-      "routes": 16,
-      "headline": 8.97,
-      "turn_lag": 0.63,
-      "censored": 0.5,
-      "sep_throw": 2.77,
-      "targets": 3
-    },
-    {
       "name": "Olamide Zaccheaus",
       "position": "WR",
       "team": "ATL",
       "routes": 15,
-      "headline": 8.81,
+      "headline": 9.9,
       "turn_lag": 1.04,
       "censored": 0.47,
       "sep_throw": 4.27,
@@ -204,11 +172,44 @@
       "position": "WR",
       "team": "NE",
       "routes": 32,
-      "headline": 8.47,
+      "headline": 9.67,
       "turn_lag": 0.65,
       "censored": 0.47,
       "sep_throw": 2.78,
       "targets": 12
+    },
+    {
+      "name": "Noah Fant",
+      "position": "TE",
+      "team": "DEN",
+      "routes": 20,
+      "headline": 9.63,
+      "turn_lag": 0.84,
+      "censored": 0.55,
+      "sep_throw": 3.56,
+      "targets": 2
+    },
+    {
+      "name": "Chris Godwin",
+      "position": "WR",
+      "team": "TB",
+      "routes": 38,
+      "headline": 9.54,
+      "turn_lag": 0.92,
+      "censored": 0.45,
+      "sep_throw": 3.58,
+      "targets": 8
+    },
+    {
+      "name": "Bryan Edwards",
+      "position": "WR",
+      "team": "LV",
+      "routes": 16,
+      "headline": 7.94,
+      "turn_lag": 0.63,
+      "censored": 0.5,
+      "sep_throw": 2.77,
+      "targets": 3
     }
   ]
 }

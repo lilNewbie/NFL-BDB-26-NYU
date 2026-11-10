@@ -107,25 +107,31 @@ def scatter_fig(tbl: pd.DataFrame, label: str, r: float) -> go.Figure:
 
 
 def pick_heroes(man: pd.DataFrame, tbl: pd.DataFrame, headline: str) -> list[dict]:
-    picks, used = [], set()
+    picks, used, players = [], set(), set()
 
     def add(row, why):
         key = (int(row["gameId"]), int(row["playId"]))
         if key not in used:
             used.add(key)
+            players.add(int(row["nflId"]))
             picks.append({"gameId": key[0], "playId": key[1], "nflId": int(row["nflId"]), "why": why})
 
     demo = man[(man["gameId"] == 2021090900) & (man["playId"] == 97) & man["is_target"]]
     if len(demo):
         add(demo.iloc[0], "Opening play of the season: Brady deep to Godwin, Cover-1")
+    # Showcase reps must be unambiguous man matchups: a cornerback on a wide receiver,
+    # with a separation at the throw in the range real man coverage produces. This only
+    # affects which replays are featured, not the metric or the leaderboards.
+    clean = (man["def_position"] == "CB") & (man["position"] == "WR") & (man["sep_throw"] <= 6.0) \
+        & (man["break_frame"] - man["snap_frame"] >= 8)
     top_ids = set(tbl.head(10)["nflId"])
-    pool = man[man["nflId"].isin(top_ids) & (man["sep_gained"] > 1.0) & (man["break_frame"] - man["snap_frame"] >= 8)]
+    pool = man[clean & man["nflId"].isin(top_ids) & (man["sep_gained"] > 1.0)]
     if len(pool):
         add(pool.sort_values(headline, ascending=False).iloc[0], "Leaderboard player turning his man")
-    pool = man[~man["is_target"] & (man["sep_gained"] > 1.5) & (man["break_frame"] - man["snap_frame"] >= 8)]
+    pool = man[clean & ~man["is_target"] & (man["sep_gained"] > 1.5)]
     if len(pool):
         add(pool.sort_values(headline, ascending=False).iloc[0], "Uncredited rep: won his man, ball went elsewhere")
-    pool = man[man["is_target"] & (man["break_frame"] - man["snap_frame"] >= 8)]
+    pool = man[clean & man["is_target"] & ~man["nflId"].isin(players)]
     if len(pool):
         add(pool.sort_values(headline).iloc[0], "Low score: defender stays square through the break")
     return picks
@@ -262,8 +268,7 @@ select{{background:#13251a;color:#fff;border:1px solid #4caf50;border-radius:6px
 line-height:1.5;margin:8px 0 0;border-radius:4px}}
 .grid{{display:grid;grid-template-columns:1fr 1fr;gap:18px}} @media(max-width:1200px){{.grid{{grid-template-columns:1fr}}}}
 table{{border-collapse:collapse}} td,th{{padding:5px 12px;border-bottom:1px solid #2e4a36;text-align:left}}
-.note{{color:#b0bec5;font-size:14px;line-height:1.5}} .legend span{{margin-right:6px}}
-.legend .term,.legend .tip{{margin-right:0}}
+.note{{color:#b0bec5;font-size:14px;line-height:1.5}}
 .ctx{{color:#eceff1;font-size:14px;margin:6px 0 0}} .hint{{color:#81c784;font-size:13px;margin:4px 0 0}}
 {TIP_CSS}
 </style></head><body>
@@ -282,13 +287,13 @@ he left the man covering him turned the wrong way.</div>
 
 <h2>Replay</h2>
 <div class="note legend">
-<div><span style="color:#ffffff">● white</span>offense (team-color ring) &nbsp;·&nbsp; <span style="color:#9e9e9e">● black</span>defense
-&nbsp;·&nbsp; <span style="color:#ff9800">◆ orange</span>ball
-&nbsp;·&nbsp; <span style="color:#fdd835">◯ yellow ring</span>{T['spot']}</div>
-<div><span style="color:#ffee58">▲ yellow arrow</span>where a coverage defender's shoulders face {T['o']} &nbsp;·&nbsp;
-<span style="color:#4dd0e1">▲ cyan arrow</span>where a receiver is moving {T['dir']}</div>
-<div>{T['wedge']}: <span style="color:#ef9a9a">red</span>{T['paired']} facing ≥45° off the receiver's path &nbsp;·&nbsp;
-<span style="color:#a5d6a7">green</span>he has {T['turned']} &nbsp;·&nbsp; <span style="color:#bdbdbd">grey</span>before the {T['break_t']}</div>
+<div><span style="color:#ffffff">● white</span> = offense (team-color ring) &nbsp;·&nbsp; <span style="color:#9e9e9e">● black</span> = defense
+&nbsp;·&nbsp; <span style="color:#ff9800">◆ orange</span> = ball
+&nbsp;·&nbsp; <span style="color:#fdd835">◯ yellow ring</span> = {T['spot']}</div>
+<div><span style="color:#ffee58">▲ yellow arrow</span> = where a coverage defender's shoulders face {T['o']} &nbsp;·&nbsp;
+<span style="color:#4dd0e1">▲ cyan arrow</span> = where a receiver is moving {T['dir']}</div>
+<div>{T['wedge']}: <span style="color:#ef9a9a">red</span> = {T['paired']} facing ≥45° off the receiver's path &nbsp;·&nbsp;
+<span style="color:#a5d6a7">green</span> = he has {T['turned']} &nbsp;·&nbsp; <span style="color:#bdbdbd">grey</span> = before the {T['break_t']}</div>
 <div>The slider marks the {T['brk']}. The {T['readout']} above the field updates live. Use 0.25× slow-mo to watch the shoulders.</div>
 </div>
 <p><select onchange="show(this.value)">{opts}</select></p>
@@ -296,8 +301,9 @@ he left the man covering him turned the wrong way.</div>
 
 <h2>Who turns defenders around</h2>
 <p class="note">{reason} {T['label']} = the receiver's average angle between his {T['paired']}'s
-shoulders and his own path from the break to the throw, minus the average for the same position and {T['bucket']}
-(slight / sideways / back toward line / diagonal downfield) against {T['man']}.</p>
+shoulders and his own path from the break to the throw, minus the average for the same receiver position, defender type
+(defensive back or linebacker) and {T['bucket']} (slight / sideways / back toward line / diagonal downfield) against
+{T['man']}.</p>
 <p class="note">Reading the charts: {T['lb']} &nbsp;·&nbsp; {T['sc']}. Hover a bar or dot for the player's numbers.</p>
 <div class="grid"><div id="lb"></div><div id="sc"></div></div>
 
@@ -307,8 +313,10 @@ shoulders and his own path from the break to the throw, minus the average for th
 
 <h2>How to read it, and its limits</h2>
 <p class="note">Orientation {T['o']} comes from shoulder-pad sensors, so this measures {T['shoulders']}. The {T['paired']} is
-the closest coverage player over the first second after the snap, a heuristic, since the data has no coverage
-assignments; routes where he is more than 5 yd away at the break are excluded because he was not on the receiver. Headline numbers use {T['man']} only, because {T['zone']} are taught to face the quarterback and are
+the closest cornerback, safety or linebacker in coverage over the first second after the snap, a heuristic, since the
+data has no coverage assignments. Linemen dropping into coverage are never paired, and routes where the paired defender
+is more than 5 yd away at the break are excluded because he was not on the receiver. Even on man-coverage plays some
+linebackers drop into zones, so linebacker pairings are compared only with other linebacker pairings. Headline numbers use {T['man']} only, because {T['zone']} are taught to face the quarterback and are
 not trying to mirror a receiver. Tracking stops just after the throw, so everything is measured snap to release.
 A defender still turned after a break is {T['assoc']}; it does not prove the route caused it.
 Thresholds: {T['break_t']} = largest 0.5 s direction change ≥30° with peak speed &gt;2 yd/s; {T['turned']} = within 45°.

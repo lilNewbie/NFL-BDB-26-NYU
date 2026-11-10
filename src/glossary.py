@@ -19,13 +19,13 @@ GLOSSARY: dict[str, tuple[str, str, str | None]] = {
                  "The average facing gap from the break to the throw, in degrees. Unlike Turn Lag it has no cap.",
                  "One number for how far, on average, the route kept the defender turned away."),
     "oe": ("Over Expected",
-           "A value minus the average for similar routes: same coverage type, same receiver position (WR/TE/RB) "
-           "and same break type.",
+           "A value minus the average for similar routes: same coverage type, same receiver position (WR/TE/RB), "
+           "same kind of defender (defensive back or linebacker) and same break type.",
            "Removes the route-shape effect. +10° means the defender was 10° further off than usual for that kind of "
            "route, so the credit goes to the receiver, not the route call."),
     "mgoe": ("Mean Gap Over Expected (headline)",
-             "Mean Gap minus the average for the same coverage type, position and break type, averaged over a "
-             "receiver's man-coverage routes.",
+             "Mean Gap minus the average for comparable routes (same coverage type, receiver position, defender "
+             "type and break type), averaged over a receiver's man-coverage routes.",
              "Positive = he turns his man around more than peers on comparable routes: a route-running skill that "
              "box scores and catch-point separation don't show. Negative = defenders stay square to him."),
     "facing_gap": ("Facing gap",
@@ -55,8 +55,9 @@ GLOSSARY: dict[str, tuple[str, str, str | None]] = {
                "Some route shapes turn defenders more than others; comparing within a type keeps the comparison "
                "fair."),
     "paired_defender": ("Paired defender",
-                        "The coverage defender closest to the receiver over the first second after the snap, and "
-                        "still within 5 yd at the break.",
+                        "The cornerback, safety or linebacker in coverage closest to the receiver over the first "
+                        "second after the snap, and still within 5 yd at the break. Linemen dropping into coverage "
+                        "are never paired.",
                         "Our stand-in for 'the man covering him', since the data has no coverage assignments. "
                         "It's a heuristic, so read single plays with care."),
     "sep_throw": ("Separation at throw",
