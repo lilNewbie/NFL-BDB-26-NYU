@@ -1,0 +1,10 @@
+{
+  "plays_total": 8557,
+  "plays_dropped_no_snap_or_throw": 974,
+  "routes_total": 34654,
+  "routes_no_break": 21061,
+  "routes_scored": 6761,
+  "routes_defender_not_close": 6832,
+  "games": 122,
+  "errors": []
+}

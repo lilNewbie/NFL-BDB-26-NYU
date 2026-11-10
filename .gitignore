@@ -1,0 +1,21 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Competition data: 833 MB, its own git repo, not ours to republish.
+# See README "Run it" for where to put it.
+nfl-big-data-bowl-regional-event-data/
+
+# Build outputs that are regenerated locally.
+# docs/index.html is the published copy of the dashboard.
+out/dashboard.html
+out/_*
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
