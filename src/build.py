@@ -16,6 +16,7 @@ import plotly.io as pio
 from plotly.offline import get_plotlyjs
 
 from .data import ROOT, prepare_game
+from .glossary import TIP_CSS, TIP_JS, coverage_term, position_term, term
 from .insight import route_insight
 from .metric import FPS, add_over_expected, compute_play
 from .viz import make_play_figure
@@ -37,8 +38,8 @@ def choose_headline(man: pd.DataFrame) -> tuple[str, str, float]:
     share = float(man["censored"].mean())
     if share > CENSOR_LIMIT:
         return "mean_gap_oe", (f"{share:.0%} of man-coverage routes end with the defender still turned when the ball "
-                               f"is thrown (censored), above the {CENSOR_LIMIT:.0%} limit, so time-to-turn is capped "
-                               f"on most reps. The headline is therefore Mean Gap Over Expected, which has no cap."), share
+                               f"is thrown (censored), above the {CENSOR_LIMIT:.0%} censoring threshold we set in "
+                               f"advance, so time-to-turn is capped on most reps. The headline is therefore Mean Gap Over Expected, which has no cap."), share
     return "turn_lag_oe", f"Only {share:.0%} of man-coverage routes are censored, so Turn Lag Over Expected is the headline.", share
 
 
@@ -83,7 +84,7 @@ def scatter_fig(tbl: pd.DataFrame, label: str, r: float) -> go.Figure:
             marker=dict(size=np.clip(sub["routes"] / 2, 6, 22), color=POS_COLORS.get(pos, "#ccc"),
                         line=dict(color="white", width=0.5), opacity=0.85),
             text=sub["name"], customdata=sub[["routes", "team"]],
-            hovertemplate="%{text} (%{customdata[1]})<br>" + label + ": %{x:.1f}°<br>sep at throw: %{y:.2f} yd"
+            hovertemplate="%{text} (%{customdata[1]})<br>" + label + ": %{x:.1f}°<br>separation at throw: %{y:.2f} yd"
                           "<br>%{customdata[0]} routes<extra></extra>"))
     for n in tbl.head(5)["name"].tolist() + tbl.sort_values("sep_throw", ascending=False).head(3)["name"].tolist():
         row = tbl[tbl["name"] == n].iloc[0]
@@ -143,6 +144,7 @@ def hero_figures(picks: list[dict], routes: pd.DataFrame):
         route["mean_gap_oe"] = float(oe["mean_gap_oe"].iloc[0])
         route["turn_lag_oe"] = float(oe["turn_lag_oe"].iloc[0])
         info = play.iloc[0]
+        p.update(quarter=int(info["quarter"]), down=int(info["down"]), ytg=int(info["yardsToGo"]))
         title = (f"{info['possessionTeam']} vs {info['defensiveTeam']} · Q{int(info['quarter'])} · "
                  f"{int(info['down'])}&{int(info['yardsToGo'])} · {info['pff_passCoverage']} · spotlight: {route['name']}")
         out.append((p, route, make_play_figure(play, route, title), str(info["playDescription"])))
@@ -206,14 +208,46 @@ def write_dashboard(summary, heroes, lb_fig, sc_fig, cbs, label):
                           config={"displayModeBar": False}, auto_play=(i == 0),
                           animation_opts=dict(mode="immediate", frame=dict(duration=int(1000 / FPS), redraw=False),
                                               transition=dict(duration=int(1000 / FPS), easing="linear")))
+        ctype = str(r["coverage_type"])
+        ctype_html = term(ctype, ctype.lower()) if ctype in ("Man", "Zone") else html.escape(ctype)
+        ctx = (f'{term("Q%d" % p["quarter"], "quarter")} · {term("%d&%d" % (p["down"], p["ytg"]), "down_distance")}'
+               f' · {coverage_term(r["coverage"])} ({ctype_html}) · {term("spotlight", "spotlight")}: '
+               f'{html.escape(r["name"])} vs {term("paired defender", "paired_defender")} '
+               f'{html.escape(r["def_name"])} ({position_term(r["def_position"])})')
         panels.append(f'<div class="panel" id="panel{i}" style="display:{"block" if i == 0 else "none"}">'
-                      f'<p class="desc">{html.escape(desc)}</p>{div}'
+                      f'<p class="ctx">{ctx}</p><p class="desc">{html.escape(desc)}</p>{div}'
                       f'<div class="insight">{route_insight(r)}</div></div>')
     cb_top = cbs.head(8)
-    cb_rows = "".join(f"<tr><td>{html.escape(n)}</td><td>{p}</td><td>{rt}</td><td>{h:+.1f}°</td><td>{s:.2f}</td></tr>"
+    cb_rows = "".join(f"<tr><td>{html.escape(n)}</td><td>{position_term(p)}</td><td>{rt}</td><td>{h:+.1f}°</td>"
+                      f"<td>{s:.2f}</td></tr>"
                       for n, p, rt, h, s in zip(cb_top["def_name"], cb_top["def_position"], cb_top["routes"],
                                                 cb_top["headline"], cb_top["sep_throw"]))
     s = summary
+    # Hover-definition snippets used in the template below (see src/glossary.py).
+    reason = html.escape(s["headline_reason"])
+    reason = reason.replace("(censored)", "(" + term("censored", "censored") + ")")
+    reason = reason.replace("30% censoring threshold we set in advance",
+                            term("30% censoring threshold we set in advance", "censor_threshold"))
+    reason = reason.replace("Mean Gap Over Expected, which has no cap", term("Mean Gap Over Expected", "mgoe")
+                            + ", which has no cap")
+    T = dict(
+        routes=term("routes with a detectable break", "routes_scored"),
+        man=term("man coverage", "man"),
+        qual=term("receivers with ≥%d man routes" % s["min_routes"], "min_routes"),
+        cens=term("man routes: defender never turned before the throw", "censored"),
+        rdef=term('r with "defender ahead at throw"', "r_def_ahead"),
+        rsep=term("r with separation at throw", "r_sep"),
+        spot=term("spotlight receiver", "spotlight"),
+        o=term("(o)", "o"), dir=term("(dir)", "dir"),
+        wedge=term("Wedge", "wedge"), brk=term("BREAK", "slider_break"), readout=term("readout", "readout"),
+        label=term(label, "mgoe"), paired=term("paired defender", "paired_defender"),
+        bucket=term("break type", "bucket"), lb=term("leaderboard (left)", "leaderboard"),
+        sc=term("scatter (right)", "scatter"), flip=term("read from the defense", "flip_side"),
+        h_routes=term("Routes", "min_routes"), h_label=term(label, "flip_side"),
+        h_sep=term("Separation at throw (yd)", "sep_throw"), shoulders=term("shoulders, not hips", "shoulders"),
+        zone=term("zone defenders", "zone"), assoc=term("associated with the route", "association"),
+        break_t=term("break", "break"), turned=term("turned", "turned"), r=term("r", "r"),
+    )
     page = f"""<!doctype html><html><head><meta charset="utf-8"><title>Turn Lag: the route-running win that separation stats miss</title>
 <script>{get_plotlyjs()}</script>
 <style>
@@ -229,56 +263,63 @@ line-height:1.5;margin:8px 0 0;border-radius:4px}}
 .grid{{display:grid;grid-template-columns:1fr 1fr;gap:18px}} @media(max-width:1200px){{.grid{{grid-template-columns:1fr}}}}
 table{{border-collapse:collapse}} td,th{{padding:5px 12px;border-bottom:1px solid #2e4a36;text-align:left}}
 .note{{color:#b0bec5;font-size:14px;line-height:1.5}} .legend span{{margin-right:6px}}
+.legend .term,.legend .tip{{margin-right:0}}
+.ctx{{color:#eceff1;font-size:14px;margin:6px 0 0}} .hint{{color:#81c784;font-size:13px;margin:4px 0 0}}
+{TIP_CSS}
 </style></head><body>
 <h1>Turn Lag <span style="color:#a5d6a7">· the route-running win that separation stats miss</span></h1>
 <div class="sub">Existing receiver metrics score the outcome — how open he was. Turn Lag scores the mechanism — how long
 he left the man covering him turned the wrong way.</div>
+<div class="hint">Hover over (or tab to) any dotted-underlined term for what it means and what it tells you.</div>
 <div class="cards">
-<div class="card"><b>{s['routes_scored']:,}</b><span>routes with a detectable break</span></div>
-<div class="card"><b>{s['routes_man']:,}</b><span>of them against man coverage</span></div>
-<div class="card"><b>{s['qualified_players']}</b><span>receivers with ≥{s['min_routes']} man routes</span></div>
-<div class="card"><b>{s['censored_share_man']:.0%}</b><span>man routes: defender never turned before the throw</span></div>
-<div class="card"><b>{s['validation_r_headline_vs_defender_ahead']:+.2f}</b><span>r with "defender ahead at throw" (near 0 = not just good coverage)</span></div>
-<div class="card"><b>{s['r_player_headline_vs_sep_throw']:+.2f}</b><span>r with separation at throw (player level)</span></div>
+<div class="card"><b>{s['routes_scored']:,}</b><span>{T['routes']}</span></div>
+<div class="card"><b>{s['routes_man']:,}</b><span>of them against {T['man']}</span></div>
+<div class="card"><b>{s['qualified_players']}</b><span>{T['qual']}</span></div>
+<div class="card"><b>{s['censored_share_man']:.0%}</b><span>{T['cens']}</span></div>
+<div class="card"><b>{s['validation_r_headline_vs_defender_ahead']:+.2f}</b><span>{T['rdef']} (near 0 = not just good coverage)</span></div>
+<div class="card"><b>{s['r_player_headline_vs_sep_throw']:+.2f}</b><span>{T['rsep']} (player level)</span></div>
 </div>
 
 <h2>Replay</h2>
 <div class="note legend">
 <div><span style="color:#ffffff">● white</span>offense (team-color ring) &nbsp;·&nbsp; <span style="color:#9e9e9e">● black</span>defense
 &nbsp;·&nbsp; <span style="color:#ff9800">◆ orange</span>ball
-&nbsp;·&nbsp; <span style="color:#fdd835">◯ yellow ring</span>spotlight receiver</div>
-<div><span style="color:#ffee58">▲ yellow arrow</span>where a coverage defender's shoulders face (o) &nbsp;·&nbsp;
-<span style="color:#4dd0e1">▲ cyan arrow</span>where a receiver is moving (dir)</div>
-<div>Wedge: <span style="color:#ef9a9a">red</span>paired defender facing ≥45° off the receiver's path &nbsp;·&nbsp;
-<span style="color:#a5d6a7">green</span>he has turned &nbsp;·&nbsp; <span style="color:#bdbdbd">grey</span>before the break</div>
-<div>The slider marks the BREAK. Use 0.25× slow-mo to watch the shoulders.</div>
+&nbsp;·&nbsp; <span style="color:#fdd835">◯ yellow ring</span>{T['spot']}</div>
+<div><span style="color:#ffee58">▲ yellow arrow</span>where a coverage defender's shoulders face {T['o']} &nbsp;·&nbsp;
+<span style="color:#4dd0e1">▲ cyan arrow</span>where a receiver is moving {T['dir']}</div>
+<div>{T['wedge']}: <span style="color:#ef9a9a">red</span>{T['paired']} facing ≥45° off the receiver's path &nbsp;·&nbsp;
+<span style="color:#a5d6a7">green</span>he has {T['turned']} &nbsp;·&nbsp; <span style="color:#bdbdbd">grey</span>before the {T['break_t']}</div>
+<div>The slider marks the {T['brk']}. The {T['readout']} above the field updates live. Use 0.25× slow-mo to watch the shoulders.</div>
 </div>
 <p><select onchange="show(this.value)">{opts}</select></p>
 {''.join(panels)}
 
 <h2>Who turns defenders around</h2>
-<p class="note">{html.escape(s['headline_reason'])} {label} = the receiver's average angle between his paired defender's
-shoulders and his own path from the break to the throw, minus the average for the same position and break type
-(slight / sideways / back toward line / diagonal downfield) against man coverage.</p>
+<p class="note">{reason} {T['label']} = the receiver's average angle between his {T['paired']}'s
+shoulders and his own path from the break to the throw, minus the average for the same position and {T['bucket']}
+(slight / sideways / back toward line / diagonal downfield) against {T['man']}.</p>
+<p class="note">Reading the charts: {T['lb']} &nbsp;·&nbsp; {T['sc']}. Hover a bar or dot for the player's numbers.</p>
 <div class="grid"><div id="lb"></div><div id="sc"></div></div>
 
 <h2>Flip side: stickiest man defenders</h2>
-<p class="note">The same data read from the defense: the lowest {label} against them (min {s['min_routes']} routes as the paired defender).</p>
-<table><tr><th>Defender</th><th>Pos</th><th>Routes</th><th>{label}</th><th>Sep at throw (yd)</th></tr>{cb_rows}</table>
+<p class="note">The same data {T['flip']}: the lowest {T['label']} against them (min {s['min_routes']} routes as the {T['paired']}).</p>
+<table><tr><th>Defender</th><th>Pos</th><th>{T['h_routes']}</th><th>{T['h_label']}</th><th>{T['h_sep']}</th></tr>{cb_rows}</table>
 
 <h2>How to read it, and its limits</h2>
-<p class="note">Orientation (o) comes from shoulder-pad sensors, so this measures shoulders, not hips. The paired defender is
+<p class="note">Orientation {T['o']} comes from shoulder-pad sensors, so this measures {T['shoulders']}. The {T['paired']} is
 the closest coverage player over the first second after the snap, a heuristic, since the data has no coverage
-assignments; routes where he is more than 5 yd away at the break are excluded because he was not on the receiver. Headline numbers use man coverage only, because zone defenders are taught to face the quarterback and are
+assignments; routes where he is more than 5 yd away at the break are excluded because he was not on the receiver. Headline numbers use {T['man']} only, because {T['zone']} are taught to face the quarterback and are
 not trying to mirror a receiver. Tracking stops just after the throw, so everything is measured snap to release.
-A defender still turned after a break is associated with the route; it does not prove the route caused it.
-Thresholds: break = largest 0.5 s direction change ≥30° with peak speed &gt;2 yd/s; turned = within 45°.</p>
+A defender still turned after a break is {T['assoc']}; it does not prove the route caused it.
+Thresholds: {T['break_t']} = largest 0.5 s direction change ≥30° with peak speed &gt;2 yd/s; {T['turned']} = within 45°.
+Correlations are reported as {T['r']}.</p>
 <script>
 const lb={pio.to_json(lb_fig)}; const sc={pio.to_json(sc_fig)};
 Plotly.newPlot('lb', lb.data, lb.layout, {{displayModeBar:false}});
 Plotly.newPlot('sc', sc.data, sc.layout, {{displayModeBar:false}});
 function show(i){{document.querySelectorAll('.panel').forEach((p,j)=>p.style.display=(j==i)?'block':'none');
 Plotly.Plots.resize(document.getElementById('play'+i));}}
+{TIP_JS}
 </script></body></html>"""
     (OUT / "dashboard.html").write_text(page, encoding="utf-8")
     # Published copy for GitHub Pages (Settings -> Pages -> serve from /docs).

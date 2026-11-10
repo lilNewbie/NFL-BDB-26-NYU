@@ -1,7 +1,7 @@
 {
   "headline": "mean_gap_oe",
   "headline_label": "Mean Gap Over Expected",
-  "headline_reason": "49% of man-coverage routes end with the defender still turned when the ball is thrown (censored), above the 30% limit, so time-to-turn is capped on most reps. The headline is therefore Mean Gap Over Expected, which has no cap.",
+  "headline_reason": "49% of man-coverage routes end with the defender still turned when the ball is thrown (censored), above the 30% censoring threshold we set in advance, so time-to-turn is capped on most reps. The headline is therefore Mean Gap Over Expected, which has no cap.",
   "censored_share_man": 0.491,
   "censored_share_all": 0.576,
   "routes_scored": 6761,
