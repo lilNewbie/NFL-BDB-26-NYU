@@ -1,10 +1,12 @@
-# Turn Lag ("Hip Flip"): crediting receivers for turning their man around
+# Turn Lag: the route-running win that separation stats miss
 
 > Existing receiver metrics score the outcome — how open he was. Turn Lag scores the mechanism — how long he left the man covering him turned the wrong way.
 
 **Audience:** scouts and coaches evaluating route running against man coverage; broadcasters who want to show *how* a route won.
 
-**Deliverable:** `docs/index.html` (also written to `out/dashboard.html` locally), one self-contained page (works offline) with animated replays, a written insight for each replay, a receiver leaderboard, a scatter against separation, and a flip-side defender table.
+**Live dashboard:** **https://lilnewbie.github.io/NFL-BDB-26-NYU/**
+
+**Deliverable:** `docs/index.html` (published at the link above, and also written to `out/dashboard.html` locally), one self-contained page (works offline) with animated replays, a written insight for each replay, a receiver leaderboard, a scatter against separation, and a flip-side defender table.
 
 ![Replay preview](out/preview_replay.png)
 
@@ -44,7 +46,7 @@ NFL tracking records two angles per player: `dir` (where he is moving) and `o` (
 
 ## Caveats
 
-- **Shoulders, not hips.** `o` comes from shoulder-pad sensors. The display name "Hip Flip" is shorthand.
+- **Shoulders, not hips.** `o` comes from shoulder-pad sensors, so the metric measures where the defender's shoulders face.
 - **Pairing is a heuristic.** The data has no defender-to-receiver assignments. Routes where the early-snap pairing is more than 5 yd away at the break are excluded.
 - **Man coverage only** for the headline numbers. Zone defenders are taught to face the quarterback, so their facing says little about the route.
 - **Association, not causation.** A defender still turned after a break is consistent with the route beating him, but not proof of it.

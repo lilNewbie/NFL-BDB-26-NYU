@@ -209,7 +209,7 @@ def write_dashboard(summary, heroes, lb_fig, sc_fig, cbs, label):
                       for n, p, rt, h, s in zip(cb_top["def_name"], cb_top["def_position"], cb_top["routes"],
                                                 cb_top["headline"], cb_top["sep_throw"]))
     s = summary
-    page = f"""<!doctype html><html><head><meta charset="utf-8"><title>Turn Lag · Hip Flip</title>
+    page = f"""<!doctype html><html><head><meta charset="utf-8"><title>Turn Lag: the route-running win that separation stats miss</title>
 <script>{get_plotlyjs()}</script>
 <style>
 body{{background:#0d1b12;color:#eceff1;font-family:Segoe UI,Arial,sans-serif;margin:0;padding:24px 36px;}}
@@ -225,7 +225,7 @@ line-height:1.5;margin:8px 0 0;border-radius:4px}}
 table{{border-collapse:collapse}} td,th{{padding:5px 12px;border-bottom:1px solid #2e4a36;text-align:left}}
 .note{{color:#b0bec5;font-size:14px;line-height:1.5}} .legend span{{margin-right:6px}}
 </style></head><body>
-<h1>Turn Lag <span style="color:#a5d6a7">("Hip Flip")</span></h1>
+<h1>Turn Lag <span style="color:#a5d6a7">· the route-running win that separation stats miss</span></h1>
 <div class="sub">Existing receiver metrics score the outcome — how open he was. Turn Lag scores the mechanism — how long
 he left the man covering him turned the wrong way.</div>
 <div class="cards">

@@ -28,8 +28,8 @@ def route_insight(r: dict) -> str:
                    f"Through the throw his shoulders averaged {r['mean_gap']:.0f}° off, {oe:.0f}° worse than a "
                    f"typical defender against a {r['position']} on this kind of break.")
     elif oe <= LOW:
-        verdict = (f"<b>Low score ({oe:+.0f}°).</b> {dname} stayed closer to square with {name} than most "
-                   f"defenders do. At the {r['bucket']} break ({t_break:.1f}s) he was {r['gap_at_break']:.0f}° off "
+        verdict = (f"<b>Low score ({oe:+.0f}°).</b> {name}'s route did not turn his man: {dname} stayed "
+                   f"closer to square with him than most defenders do. At the {r['bucket']} break ({t_break:.1f}s) he was {r['gap_at_break']:.0f}° off "
                    f"the new path and {turn}. From the break to the throw his shoulders averaged "
                    f"{r['mean_gap']:.0f}° off, {abs(oe):.0f}° better than a typical defender against a "
                    f"{r['position']} on this kind of break, so the route turned him less than usual.")
