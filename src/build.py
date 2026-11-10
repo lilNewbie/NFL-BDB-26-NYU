@@ -17,7 +17,7 @@ from plotly.offline import get_plotlyjs
 
 from .data import ROOT, prepare_game
 from .insight import route_insight
-from .metric import add_over_expected, compute_play
+from .metric import FPS, add_over_expected, compute_play
 from .viz import make_play_figure
 
 OUT = ROOT / "out"
@@ -199,8 +199,13 @@ def write_dashboard(summary, heroes, lb_fig, sc_fig, cbs, label):
                    for i, (p, r, _, _) in enumerate(heroes))
     panels = []
     for i, (p, r, fig, desc) in enumerate(heroes):
+        # Only the visible replay auto-plays, and with the same smooth settings as the
+        # Play button. Plotly's on-load default is a full redraw every frame with
+        # 0.5 s eased steps, which is what made the first run lag.
         div = pio.to_html(fig, full_html=False, include_plotlyjs=False, div_id=f"play{i}",
-                          config={"displayModeBar": False})
+                          config={"displayModeBar": False}, auto_play=(i == 0),
+                          animation_opts=dict(mode="immediate", frame=dict(duration=int(1000 / FPS), redraw=False),
+                                              transition=dict(duration=int(1000 / FPS), easing="linear")))
         panels.append(f'<div class="panel" id="panel{i}" style="display:{"block" if i == 0 else "none"}">'
                       f'<p class="desc">{html.escape(desc)}</p>{div}'
                       f'<div class="insight">{route_insight(r)}</div></div>')
@@ -239,10 +244,11 @@ he left the man covering him turned the wrong way.</div>
 
 <h2>Replay</h2>
 <div class="note legend">
-<div><span style="color:#f5f0e1">● cream</span>offense &nbsp;·&nbsp; <span style="color:#90a4ae">● team color</span>defense
+<div><span style="color:#ffffff">● white</span>offense (team-color ring) &nbsp;·&nbsp; <span style="color:#9e9e9e">● black</span>defense
+&nbsp;·&nbsp; <span style="color:#ff9800">◆ orange</span>ball
 &nbsp;·&nbsp; <span style="color:#fdd835">◯ yellow ring</span>spotlight receiver</div>
-<div><span style="color:#fff59d">▲ yellow arrow</span>where a coverage defender's shoulders face (o) &nbsp;·&nbsp;
-<span style="color:#80deea">▲ cyan arrow</span>where a receiver is moving (dir)</div>
+<div><span style="color:#ffee58">▲ yellow arrow</span>where a coverage defender's shoulders face (o) &nbsp;·&nbsp;
+<span style="color:#4dd0e1">▲ cyan arrow</span>where a receiver is moving (dir)</div>
 <div>Wedge: <span style="color:#ef9a9a">red</span>paired defender facing ≥45° off the receiver's path &nbsp;·&nbsp;
 <span style="color:#a5d6a7">green</span>he has turned &nbsp;·&nbsp; <span style="color:#bdbdbd">grey</span>before the break</div>
 <div>The slider marks the BREAK. Use 0.25× slow-mo to watch the shoulders.</div>

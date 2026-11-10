@@ -89,36 +89,8 @@ def _frame_traces(fr: pd.DataFrame, off_team: str, def_team: str, route: dict | 
         return [f"{n} ({p})<br>{role}<br>{s:.1f} yd/s" for n, p, role, s in
                 zip(d["displayName"], d["officialPosition"], d["pff_role"].fillna(""), d["s"])]
 
-    # Offense is always cream (team color as the outline) so it never blends with the
-    # defense when both teams wear dark colors, e.g. LA vs HOU.
-    oc = TEAM_COLORS.get(off_team, "#e53935")
-    dc = TEAM_COLORS.get(def_team, "#1e88e5")
-    traces = [
-        go.Scatter(x=off["x"], y=off["y"], mode="markers+text", text=off["jerseyNumber"].astype("Int64").astype(str),
-                   textfont=dict(color="#111111", size=9), hovertext=hover(off), hoverinfo="text",
-                   marker=dict(size=17, color="#f5f0e1", line=dict(color=oc, width=2.5)),
-                   name=f"{off_team} (offense)"),
-        go.Scatter(x=dfn["x"], y=dfn["y"], mode="markers+text", text=dfn["jerseyNumber"].astype("Int64").astype(str),
-                   textfont=dict(color="white", size=9), hovertext=hover(dfn), hoverinfo="text",
-                   marker=dict(size=17, color=dc, line=dict(color="white", width=1.5)),
-                   name=f"{def_team} (defense)"),
-        go.Scatter(x=ball["x"], y=ball["y"], mode="markers", hoverinfo="skip", name="ball",
-                   marker=dict(size=9, color="#8d6e63", symbol="diamond", line=dict(color="white", width=1))),
-    ]
-    cov = dfn[dfn["pff_role"] == "Coverage"]
-    xs, ys, tx, ty, ta = _arrows(cov, "o_s")
-    traces.append(go.Scatter(x=xs, y=ys, mode="lines", line=dict(color="#fff59d", width=2),
-                             hoverinfo="skip", name="defender facing (o)"))
-    traces.append(go.Scatter(x=tx, y=ty, mode="markers", hoverinfo="skip", showlegend=False,
-                             marker=dict(symbol="triangle-up", size=9, angle=ta, color="#fff59d")))
-    rts = off[off["pff_role"] == "Pass Route"]
-    xs, ys, tx, ty, ta = _arrows(rts, "dir_s")
-    traces.append(go.Scatter(x=xs, y=ys, mode="lines", line=dict(color="#80deea", width=2),
-                             hoverinfo="skip", name="receiver path (dir)"))
-    traces.append(go.Scatter(x=tx, y=ty, mode="markers", hoverinfo="skip", showlegend=False,
-                             marker=dict(symbol="triangle-up", size=9, angle=ta, color="#80deea")))
-
-    # Spotlight: trail, pairing line and wedge.
+    # Spotlight layers first, so they sit under the players: the semi-transparent
+    # wedge used to be drawn on top and washed out the paired defender.
     wx, wy, color, px, py, trx, tryy = [None], [None], GREY, [None], [None], [None], [None]
     if route is not None:
         rec = players[players["nflId"] == route["nflId"]]
@@ -132,17 +104,58 @@ def _frame_traces(fr: pd.DataFrame, off_team: str, def_team: str, route: dict | 
             px, py = [rec["x"], d["x"]], [rec["y"], d["y"]]
         if trail is not None and len(trail):
             trx, tryy = list(trail["x"]), list(trail["y"])
-    traces.append(go.Scatter(x=trx, y=tryy, mode="lines", line=dict(color="#80deea", width=3, dash="dot"),
-                             hoverinfo="skip", name="spotlight route"))
-    traces.append(go.Scatter(x=px, y=py, mode="lines+markers", line=dict(color="white", width=1, dash="dash"),
-                             marker=dict(size=[30, 0], color="rgba(0,0,0,0)", line=dict(color="#fdd835", width=3)),
-                             hoverinfo="skip", name="spotlight receiver ↔ paired defender"))
-    traces.append(go.Scatter(x=wx, y=wy, mode="lines", fill="toself", fillcolor=color,
-                             line=dict(color=color.replace("0.55", "0.9").replace("0.35", "0.6"), width=1),
-                             hoverinfo="skip", name="facing gap"))
+    traces = [
+        go.Scatter(x=wx, y=wy, mode="lines", fill="toself", fillcolor=color,
+                   line=dict(color=color.replace("0.55", "0.9").replace("0.35", "0.6"), width=1),
+                   hoverinfo="skip", name="facing gap"),
+        go.Scatter(x=trx, y=tryy, mode="lines", line=dict(color="#80deea", width=3, dash="dot"),
+                   hoverinfo="skip", name="spotlight route"),
+        go.Scatter(x=px, y=py, mode="lines+markers", line=dict(color="white", width=1, dash="dash"),
+                   marker=dict(size=[30, 0], color="rgba(0,0,0,0)", line=dict(color="#fdd835", width=3)),
+                   hoverinfo="skip", name="spotlight receiver ↔ paired defender"),
+    ]
+
+    # Players: white offense vs near-black defense is the strongest contrast on green
+    # turf and never collides when both teams wear dark colors (e.g. LA vs HOU).
+    # The offense keeps its team color as the ring; the defense gets a white ring,
+    # since a dark team color on black would be invisible.
+    oc = TEAM_COLORS.get(off_team, "#e53935")
+    traces += [
+        go.Scatter(x=off["x"], y=off["y"], mode="markers+text", text=off["jerseyNumber"].astype("Int64").astype(str),
+                   textfont=dict(color="#000000", size=10, family="Arial Black"), hovertext=hover(off),
+                   hoverinfo="text", marker=dict(size=19, color="#ffffff", opacity=1, line=dict(color=oc, width=3)),
+                   name=f"{off_team} (offense)"),
+        go.Scatter(x=dfn["x"], y=dfn["y"], mode="markers+text", text=dfn["jerseyNumber"].astype("Int64").astype(str),
+                   textfont=dict(color="#ffffff", size=10, family="Arial Black"), hovertext=hover(dfn),
+                   hoverinfo="text", marker=dict(size=19, color="#111111", opacity=1,
+                                                 line=dict(color="#ffffff", width=1.5)),
+                   name=f"{def_team} (defense)"),
+    ]
+    cov = dfn[dfn["pff_role"] == "Coverage"]
+    xs, ys, tx, ty, ta = _arrows(cov, "o_s")
+    traces.append(go.Scatter(x=xs, y=ys, mode="lines", line=dict(color="#ffee58", width=2.5),
+                             hoverinfo="skip", name="defender facing (o)"))
+    traces.append(go.Scatter(x=tx, y=ty, mode="markers", hoverinfo="skip", showlegend=False,
+                             marker=dict(symbol="triangle-up", size=10, angle=ta, color="#ffee58")))
+    rts = off[off["pff_role"] == "Pass Route"]
+    xs, ys, tx, ty, ta = _arrows(rts, "dir_s")
+    traces.append(go.Scatter(x=xs, y=ys, mode="lines", line=dict(color="#4dd0e1", width=2.5),
+                             hoverinfo="skip", name="receiver path (dir)"))
+    traces.append(go.Scatter(x=tx, y=ty, mode="markers", hoverinfo="skip", showlegend=False,
+                             marker=dict(symbol="triangle-up", size=10, angle=ta, color="#4dd0e1")))
+    traces.append(go.Scatter(x=ball["x"], y=ball["y"], mode="markers", hoverinfo="skip", name="ball",
+                             marker=dict(size=12, color="#ff9800", symbol="diamond", opacity=1,
+                                         line=dict(color="#000000", width=1.5))))
     traces.append(go.Scatter(x=[1], y=[FIELD_WIDTH + 3.3], mode="text", text=[readout], textposition="middle right",
                              textfont=dict(color="white", size=14, family="Consolas, monospace"),
                              hoverinfo="skip", showlegend=False))
+    # Legend order is independent of draw order: players first, spotlight last.
+    rank = {"(offense)": 1, "(defense)": 2, "ball": 3, "defender facing (o)": 4, "receiver path (dir)": 5,
+            "facing gap": 6, "spotlight route": 7, "spotlight receiver ↔ paired defender": 8}
+    for t in traces:
+        for key, r in rank.items():
+            if t.name and (t.name == key or t.name.endswith(key)):
+                t.legendrank = r
     return traces
 
 
@@ -180,14 +193,25 @@ def make_play_figure(play: pd.DataFrame, route: dict | None, title: str = "") ->
 
     frames = []
     for i, f in enumerate(frames_ids):
-        trail = rec_path[rec_path["frameId"] <= f] if rec_path is not None else None
+        trail = None
+        if rec_path is not None:
+            # Keep the trail the same length in every frame (future points sit on the
+            # current position) so Plotly can tween it instead of snapping.
+            done = rec_path[rec_path["frameId"] <= f]
+            trail = pd.concat([done, done.iloc[[-1] * (len(rec_path) - len(done))]]) if len(done) else done
         frames.append(go.Frame(name=str(f), data=_frame_traces(by_frame[f], off_team, def_team, route, i, trail,
                                                                _readout(route, i, f))))
 
     layout = _field_layout(los, first_down)
     fig = go.Figure(data=frames[0].data, frames=frames)
+    # redraw=False uses Plotly's fast path: only the traces move, the field is not
+    # re-rendered every frame (that full redraw is what made the field flicker).
+    # A linear transition as long as the frame tweens players between the 10 Hz samples.
+    def play_args(ms):
+        return [None, dict(frame=dict(duration=ms, redraw=False), fromcurrent=True, mode="immediate",
+                           transition=dict(duration=ms, easing="linear"))]
     steps = [dict(method="animate", label=f"{(f - frames_ids[0]) / FPS:.1f}",
-                  args=[[str(f)], dict(mode="immediate", frame=dict(duration=0, redraw=True),
+                  args=[[str(f)], dict(mode="immediate", frame=dict(duration=0, redraw=False),
                                        transition=dict(duration=0))]) for f in frames_ids]
     if route is not None:
         b = route["series"]["b_idx"]
@@ -203,14 +227,11 @@ def make_play_figure(play: pd.DataFrame, route: dict | None, title: str = "") ->
         shapes=layout["shapes"], annotations=layout["annotations"],
         updatemenus=[dict(type="buttons", showactive=False, x=0.0, y=-0.08, xanchor="left", direction="left",
                           buttons=[
-                              dict(label="▶ Play", method="animate",
-                                   args=[None, dict(frame=dict(duration=100, redraw=True), fromcurrent=True,
-                                                    transition=dict(duration=0))]),
+                              dict(label="▶ Play", method="animate", args=play_args(int(1000 / FPS))),
                               dict(label="❚❚ Pause", method="animate",
-                                   args=[[None], dict(mode="immediate", frame=dict(duration=0, redraw=False))]),
-                              dict(label="0.25× slow-mo", method="animate",
-                                   args=[None, dict(frame=dict(duration=400, redraw=True), fromcurrent=True,
-                                                    transition=dict(duration=0))]),
+                                   args=[[None], dict(mode="immediate", frame=dict(duration=0, redraw=False),
+                                                      transition=dict(duration=0))]),
+                              dict(label="0.25× slow-mo", method="animate", args=play_args(int(4000 / FPS))),
                           ])],
         sliders=[dict(active=0, x=0.25, len=0.75, y=-0.06, steps=steps,
                       currentvalue=dict(prefix="seconds after snap: ", font=dict(color="white")),
